@@ -4,8 +4,11 @@
    FUNCTION DECLARATIONS
 ========================= */
 
-void execute_basic();
+void execute_command();
 char get_key();
+
+int atoi(const char* str);
+void print_int(int num);
 
 unsigned char inb(unsigned short port);
 void outb(unsigned short port, unsigned char val);
@@ -165,6 +168,40 @@ void clear() {
     move_cursor();
 }
 
+void print_int(int num) {
+
+    char buffer[16];
+    int i = 0;
+
+    if (num == 0) {
+
+        print("0");
+        return;
+    }
+
+    if (num < 0) {
+
+        print("-");
+        num = -num;
+    }
+
+    while (num > 0) {
+
+        buffer[i++] = (num % 10) + '0';
+
+        num /= 10;
+    }
+
+    while (i > 0) {
+
+        char c[2];
+
+        c[0] = buffer[--i];
+        c[1] = 0;
+
+        print(c);
+    }
+}
 
 /* =========================
    STRING FUNCTIONS
@@ -200,23 +237,50 @@ int starts_with(const char* str, const char* prefix) {
     return 1;
 }
 
+/* =========================
+    INTEGER FUNCTIONS
+========================= */
+
+int atoi(const char* str) {
+
+    int result = 0;
+    int sign = 1;
+
+    if (*str == '-') {
+        sign = -1;
+        str++;
+    }
+
+    while (*str >= '0' && *str <= '9') {
+
+        result = result * 10 + (*str - '0');
+        str++;
+    }
+
+    return result * sign;
+}
+
 
 /* =========================
    BASIC COMMANDS
 ========================= */
 
-void execute_basic() {
+void execute_command() {
 
     newline();
 
-    /* ===== PRINT ===== */
+    /* =====================================
+       PRINT
+    ===================================== */
 
     if (starts_with(input, "PRINT ")) {
 
         print(input + 6);
     }
 
-    /* ===== HELP ===== */
+    /* =====================================
+       HELP
+    ===================================== */
 
     else if (strcmp(input, "HELP")) {
 
@@ -224,6 +288,9 @@ void execute_basic() {
         newline();
 
         print("PRINT TEXT");
+        newline();
+
+        print("MATH X OP Y");
         newline();
 
         print("CLEAR");
@@ -235,31 +302,127 @@ void execute_basic() {
         print("HELP");
     }
 
-    /* ===== VERSION ===== */
+    /* =====================================
+       VERSION
+    ===================================== */
 
     else if (strcmp(input, "VER")) {
 
-        print("vnBASIC V0.1");
+        print("vnOS V0.1");
     }
 
-    /* ===== CLEAR ===== */
+    /* =====================================
+       CLEAR
+    ===================================== */
 
     else if (strcmp(input, "CLEAR")) {
 
         clear();
     }
 
-    /* ===== UNKNOWN ===== */
+    /* =====================================
+       MATH
+    ===================================== */
+
+    else if (starts_with(input, "MATH ")) {
+
+        int i = 5;
+
+        char num1_str[16];
+        char num2_str[16];
+
+        int n1 = 0;
+        int n2 = 0;
+
+        char op;
+
+        /* ===== FIRST NUMBER ===== */
+
+        while (input[i] != ' ' && input[i] != 0) {
+
+            num1_str[n1++] = input[i++];
+        }
+
+        num1_str[n1] = 0;
+
+        i++;
+
+        /* ===== OPERATOR ===== */
+
+        op = input[i++];
+
+        i++;
+
+        /* ===== SECOND NUMBER ===== */
+
+        while (input[i] != 0) {
+
+            num2_str[n2++] = input[i++];
+        }
+
+        num2_str[n2] = 0;
+
+        int a = atoi(num1_str);
+        int b = atoi(num2_str);
+
+        int result = 0;
+
+        /* ===== OPERATIONS ===== */
+
+        if (op == '+') {
+
+            result = a + b;
+        }
+
+        else if (op == '-') {
+
+            result = a - b;
+        }
+
+        else if (op == '*') {
+
+            result = a * b;
+        }
+
+        else if (op == '/') {
+
+            if (b == 0) {
+
+                print("DIV BY ZERO");
+
+                goto done;
+            }
+
+            result = a / b;
+        }
+
+        else {
+
+            print("BAD OPERATOR");
+
+            goto done;
+        }
+
+        print_int(result);
+    }
+
+    /* =====================================
+       UNKNOWN
+    ===================================== */
 
     else {
 
         print("?SYNTAX ERROR");
     }
 
+done:
+
     input_pos = 0;
+
     input[0] = 0;
 
     newline();
+
     print("] ");
 }
 
@@ -343,7 +506,7 @@ void kernel_main() {
 
             input[input_pos] = 0;
 
-            execute_basic();
+            execute_command();
         }
 
         /* ===== BACKSPACE ===== */
