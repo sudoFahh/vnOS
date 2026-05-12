@@ -12,3 +12,5 @@ cp kernel.bin iso/boot/kernel.bin
 cp grub.cfg iso/boot/grub/grub.cfg
 
 grub2-mkrescue -o myos.iso iso
+
+mv myos.iso .isos/myos.iso
