@@ -66,6 +66,16 @@ char scancode_table_shift[128] = {
 'B','N','M','<','>','?',0,'*',0,' '
 };
 
+#define MAX_FILES 32
+#define NAME_LEN 128
+#define CONTENT_LEN 256
+
+char names[MAX_FILES][NAME_LEN];
+char contents[MAX_FILES][CONTENT_LEN];
+int used[MAX_FILES];
+
+char LOADED_CONTENT[256];
+
 
 /* =========================
    PORT IO
@@ -109,6 +119,18 @@ void move_cursor() {
 /* =========================
    SCREEN FUNCTIONS
 ========================= */
+
+void strcpy(char* dest, const char* src) {
+
+    int i = 0;
+
+    while (src[i] != 0) {
+        dest[i] = src[i];
+        i++;
+    }
+
+    dest[i] = 0;
+}
 
 void scroll() {
 
@@ -260,6 +282,69 @@ int atoi(const char* str) {
     return result * sign;
 }
 
+/* =========================
+    FILESYSTEM COMMANDS
+========================= */
+
+void save_file(char* name, char* content) {
+
+    for (int i = 0; i < MAX_FILES; i++) {
+
+        // empty slot OR overwrite same file
+        if (!used[i] || strcmp(names[i], name)) {
+
+            int j = 0;
+
+            // copy name
+            while (name[j] && j < NAME_LEN - 1) {
+                names[i][j] = name[j];
+                j++;
+            }
+            names[i][j] = 0;
+
+            // copy content
+            j = 0;
+            while (content[j] && j < CONTENT_LEN - 1) {
+                contents[i][j] = content[j];
+                j++;
+            }
+            contents[i][j] = 0;
+
+            used[i] = 1;
+
+            print("SAVED");
+            return;
+        }
+    }
+
+    print("DISK FULL");
+}
+
+void load_file(char* name) {
+
+    for (int i = 0; i < MAX_FILES; i++) {
+
+        if (used[i] && strcmp(names[i], name)) {
+
+            strcpy(LOADED_CONTENT, contents[i]);
+            print("LOADED");
+            return;
+        }
+    }
+
+    print("NOT FOUND");
+}
+
+void list_files() {
+
+    for (int i = 0; i < MAX_FILES; i++) {
+
+        if (used[i]) {
+            print(names[i]);
+            newline();
+        }
+    }
+}
 
 /* =========================
    BASIC COMMANDS
@@ -293,6 +378,18 @@ void execute_command() {
         print("MATH X OP Y");
         newline();
 
+        print("LS");
+        newline();
+
+        print("SAVE FILENAME CONTENT");
+        newline();
+
+        print("LOAD FILENAME");
+        newline();
+
+        print("RUN");
+        newline();
+
         print("CLEAR");
         newline();
 
@@ -318,6 +415,73 @@ void execute_command() {
     else if (strcmp(input, "CLEAR")) {
 
         clear();
+    }
+
+    /* =====================================
+       LIST FILES
+    ===================================== */
+
+
+    else if (strcmp(input, "LS")) {
+    list_files();
+    }
+
+    /* =====================================
+       RUN FILES
+    ===================================== */
+
+
+    else if (strcmp(input, "RUN")) {
+
+    strcpy(input, LOADED_CONTENT);
+    execute_command();
+    }
+
+    /* =====================================
+       SAVING FILES
+    ===================================== */
+
+    else if (starts_with(input, "SAVE ")) {
+
+    char name[NAME_LEN];
+    char content[CONTENT_LEN];
+
+    int i = 5, n = 0;
+
+    // read name
+    while (input[i] != ' ' && input[i] != 0) {
+        name[n++] = input[i++];
+    }
+    name[n] = 0;
+
+    if (input[i] == ' ') i++;
+
+    // read content
+    int c = 0;
+    while (input[i] != 0) {
+        content[c++] = input[i++];
+    }
+    content[c] = 0;
+
+    save_file(name, content);
+    }
+
+    /* =====================================
+       LOADING FILES
+    ===================================== */
+
+    else if (starts_with(input, "LOAD ")) {
+
+    char name[NAME_LEN];
+
+    int i = 5, n = 0;
+
+    while (input[i] != 0) {
+        name[n++] = input[i++];
+    }
+    name[n] = 0;
+
+    load_file(name);
     }
 
     /* =====================================
@@ -492,6 +656,7 @@ void kernel_main() {
     newline();
 
     print("READY.");
+
     newline();
 
     print("] ");
