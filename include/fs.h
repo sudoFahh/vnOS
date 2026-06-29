@@ -8,7 +8,7 @@
 extern char LOADED_CONTENT[256];
 
 void save_file(char* name, char* content);
-void load_file(char* name);
+int load_file(char* name);
 void list_files();
 
 #endif

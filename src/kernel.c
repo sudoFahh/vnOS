@@ -21,7 +21,12 @@ void kernel_main() {
         if (c == '\n') {
 
             input[input_pos] = 0;
-            execute_command();
+
+            if (edit_mode) {
+                handle_edit_line();
+            } else {
+                execute_command();
+            }
         }
 
         else if (c == 8 && input_pos > 0) {

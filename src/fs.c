@@ -42,22 +42,15 @@ void save_file(char* name, char* content) {
     print("DISK FULL");
 }
 
-void load_file(char* name) {
-
+int load_file(char* name) {
     for (int i = 0; i < MAX_FILES; i++) {
-
         if (used[i] && strcmp(names[i], name)) {
-
             strcpy(LOADED_CONTENT, contents[i]);
-
-            print("LOADED");
-            return;
+            return 1;
         }
     }
-
-    print("NOT FOUND");
+    return 0;
 }
-
 void list_files() {
 
     for (int i = 0; i < MAX_FILES; i++) {

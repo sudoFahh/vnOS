@@ -6,6 +6,64 @@
 char input[256];
 int input_pos = 0;
 
+int edit_mode = 0;
+
+char edit_filename[128];
+char edit_buffer[2048];
+int edit_buffer_len = 0;
+
+void handle_edit_line() {
+
+    if (strcmp(input, ":WQ")) {
+
+        save_file(edit_filename, edit_buffer);
+        edit_mode = 0;
+
+        newline();
+        print("SAVED");
+        newline();
+        print("] ");
+    }
+
+    else if (strcmp(input, ":W")) {
+
+        save_file(edit_filename, edit_buffer);
+
+        newline();
+        print("SAVED");
+        newline();
+        print("> ");
+    }
+
+    else if (strcmp(input, ":Q")) {
+
+        edit_mode = 0;
+        edit_buffer_len = 0;
+        edit_buffer[0] = 0;
+
+        newline();
+        print("] ");
+    }
+
+    else {
+
+        int i = 0;
+
+        while (input[i] != 0 && edit_buffer_len < 2046) {
+            edit_buffer[edit_buffer_len++] = input[i++];
+        }
+
+        edit_buffer[edit_buffer_len++] = '\n';
+        edit_buffer[edit_buffer_len] = 0;
+
+        newline();
+        print("> ");
+    }
+
+    input_pos = 0;
+    input[0] = 0;
+}
+
 void execute_command() {
 
     newline();
@@ -14,7 +72,7 @@ void execute_command() {
        PRINT
     ===================================== */
 
-    if (starts_with(input, "PRINT ")) {
+    if (starts_with(input, "PRINT ") && !edit_mode) {
 
         print(input + 6);
     }
@@ -23,7 +81,7 @@ void execute_command() {
        HELP
     ===================================== */
 
-    else if (strcmp(input, "HELP")) {
+    else if (strcmp(input, "HELP") && !edit_mode) {
 
         print("COMMANDS:");
         newline();
@@ -37,7 +95,7 @@ void execute_command() {
         print("LS");
         newline();
 
-        print("SAVE FILENAME CONTENT");
+        print("EDIT FILENAME CONTENT");
         newline();
 
         print("LOAD FILENAME");
@@ -59,7 +117,7 @@ void execute_command() {
        VERSION
     ===================================== */
 
-    else if (strcmp(input, "VER")) {
+    else if (strcmp(input, "VER") && !edit_mode) {
 
         print("vnOS V0.1");
     }
@@ -68,7 +126,7 @@ void execute_command() {
        CLEAR
     ===================================== */
 
-    else if (strcmp(input, "CLEAR")) {
+    else if (strcmp(input, "CLEAR") && !edit_mode) {
 
         clear();
     }
@@ -77,7 +135,7 @@ void execute_command() {
        LIST FILES
     ===================================== */
 
-    else if (strcmp(input, "LS")) {
+    else if (strcmp(input, "LS") && !edit_mode) {
 
         list_files();
     }
@@ -86,7 +144,7 @@ void execute_command() {
        RUN FILES
     ===================================== */
 
-    else if (strcmp(input, "RUN")) {
+    else if (strcmp(input, "RUN") && !edit_mode) {
 
         strcpy(input, LOADED_CONTENT);
         execute_command();
@@ -96,42 +154,65 @@ void execute_command() {
        SAVING FILES
     ===================================== */
 
-    else if (starts_with(input, "SAVE ")) {
+    else if (starts_with(input, "EDIT ")) {
 
-        char name[128];
-        char content[256];
+        edit_mode = 1;
 
         int i = 5;
         int n = 0;
 
         while (input[i] != ' ' && input[i] != 0) {
-
-            name[n++] = input[i++];
+            edit_filename[n++] = input[i++];
         }
 
-        name[n] = 0;
+        edit_filename[n] = 0;
 
-        if (input[i] == ' ') {
-            i++;
+        clear();
+        print("EDIT MODE: ");
+        print(edit_filename);
+        newline();
+
+        if (load_file(edit_filename)) {
+
+            strcpy(edit_buffer, LOADED_CONTENT);
+
+            edit_buffer_len = 0;
+            while (edit_buffer[edit_buffer_len] != 0) {
+                edit_buffer_len++;
+            }
+
+            int j = 0;
+            while (LOADED_CONTENT[j] != 0) {
+
+                if (LOADED_CONTENT[j] == '\n') {
+                    newline();
+                } else {
+                    put_char(LOADED_CONTENT[j]);
+                }
+                j++;
+            }
+
+            newline();
+        }
+        else {
+
+            edit_buffer_len = 0;
+            edit_buffer[0] = 0;
         }
 
-        int c = 0;
+        print("> ");
 
-        while (input[i] != 0) {
+        input_pos = 0;
+        input[0] = 0;
 
-            content[c++] = input[i++];
-        }
-
-        content[c] = 0;
-
-        save_file(name, content);
-    }
+        return;
+    }   
 
     /* =====================================
        LOADING FILES
     ===================================== */
 
-    else if (starts_with(input, "LOAD ")) {
+    else if (starts_with(input, "LOAD ") && !edit_mode) {
 
         char name[128];
 
@@ -152,7 +233,7 @@ void execute_command() {
        MATH
     ===================================== */
 
-    else if (starts_with(input, "MATH ")) {
+    else if (starts_with(input, "MATH ") && !edit_mode) {
 
         int i = 5;
 
@@ -235,8 +316,9 @@ void execute_command() {
     ===================================== */
 
     else {
-
+        if(!edit_mode){
         print("?SYNTAX ERROR");
+        }
     }
 
 done:
@@ -245,5 +327,7 @@ done:
     input[0] = 0;
 
     newline();
-    print("] ");
+    if (!edit_mode) {
+        print("] ");
+    }
 }
